@@ -1,4 +1,4 @@
-name: ci
+name: derp-admission
 
 on:
   push:
@@ -9,11 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: derp-admission
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: derp-admission/go.mod
       - run: go vet ./...
       - run: go build ./...
       - run: go test ./...
@@ -36,7 +39,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository }}/derp-admission
           tags: |
             type=edge,branch=main
             type=semver,pattern={{version}}
@@ -44,7 +47,7 @@ jobs:
             type=sha
       - uses: docker/build-push-action@v6
         with:
-          context: .
+          context: derp-admission
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
