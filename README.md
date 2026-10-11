@@ -17,7 +17,7 @@ A DERP server (`derper`) that only admits devices from your own tailnets, plus t
 ```yaml
 services:
   admission:
-    image: ghcr.io/<owner>/<repo>/derp-admission:edge
+    image: ghcr.io/<owner>/<repo>/derp-admission:latest
     restart: unless-stopped
     volumes:
       - ./config.yaml:/config.yaml:ro

@@ -44,7 +44,7 @@ Docker (multi-arch image, linux/amd64 and linux/arm64). The image runs as UID 65
 ```sh
 docker run -d -p 8080:8080 \
   -v $PWD/config.yaml:/config.yaml:ro \
-  ghcr.io/<owner>/<repo>/derp-admission:edge
+  ghcr.io/<owner>/<repo>/derp-admission:latest
 ```
 
 ## Use with derper

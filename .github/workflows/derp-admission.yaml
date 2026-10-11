@@ -3,7 +3,6 @@ name: derp-admission
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
 
 jobs:
@@ -24,11 +23,24 @@ jobs:
   image:
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: derp-admission-image
+      cancel-in-progress: false
     permissions:
-      contents: read
+      contents: write
       packages: write
+    env:
+      MAJOR_MINOR: ${{ vars.MAJOR_MINOR || '0.1' }}
+      RELEASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
+      - id: ver
+        if: env.RELEASE == 'true'
+        run: |
+          [[ "$MAJOR_MINOR" =~ ^[0-9]+\.[0-9]+$ ]] || { echo "invalid MAJOR_MINOR: $MAJOR_MINOR" >&2; exit 1; }
+          git fetch --tags --force -q
+          last=$(git tag -l "derp-admission/v${MAJOR_MINOR}.*" | sed 's#.*\.##' | sort -n | tail -1)
+          echo "version=${MAJOR_MINOR}.$(( ${last:--1} + 1 ))" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: github.event_name != 'pull_request'
@@ -41,9 +53,9 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}/derp-admission
           tags: |
-            type=edge,branch=main
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ steps.ver.outputs.version }},enable=${{ env.RELEASE == 'true' }}
+            type=raw,value=${{ env.MAJOR_MINOR }},enable=${{ env.RELEASE == 'true' }}
+            type=raw,value=latest,enable=${{ env.RELEASE == 'true' }}
             type=sha
       - uses: docker/build-push-action@v6
         with:
@@ -54,3 +66,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Tag release
+        if: env.RELEASE == 'true'
+        run: |
+          git tag "derp-admission/v${{ steps.ver.outputs.version }}" "$GITHUB_SHA"
+          git push origin "derp-admission/v${{ steps.ver.outputs.version }}"
