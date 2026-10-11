@@ -1,0 +1,14 @@
+listen: ":8080"
+refreshInterval: 5m
+tailnets:
+- name: tailnet1
+  auth:
+    clientCredential:
+      id: client1
+      secret: tskey-client-bogus
+- name: tailnet2
+  auth:
+    identityFederation:
+      id: client2
+      azureImds:
+        clientId: 00000000-0000-0000-0000-000000000000
