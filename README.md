@@ -50,6 +50,18 @@ docker compose up -d
 
 Replace `<owner>/<repo>` with the GitHub repository publishing the images and `derp.example.com` with a hostname that resolves to this machine; `derper` obtains its certificate from Let's Encrypt on ports 80/443. With `-verify-client-url-fail-open=false`, clients are rejected whenever `admission` is unreachable.
 
+## Hardening a public DERP server
+
+- **Fail closed.** Always pass `-verify-client-url-fail-open=false`; the `derper` default is to admit everyone when the admission service is unreachable.
+- **Keep the admission port private.** Publish it only to localhost or an internal network, never to the internet.
+- **Mind the refresh interval.** A deleted device stays admitted for up to `refreshInterval`; lower it if that matters (the Tailscale API has rate limits).
+- **Control who can join the tailnet.** Admission trusts every device in the configured tailnets, so enable device approval there.
+- **Rate limit.** `derper` supports `-accept-connection-limit` / `-accept-connection-burst` (new connections) and `-rate-config` (experimental, per-client; reloaded on `SIGHUP`). Check `derper -h` for your version.
+- **Reduce exposure.** Set `-home=blank`, and open only 80/tcp, 443/tcp and 3478/udp in the firewall. Leave `/debug/` at its default restriction.
+- **Watch egress.** Set cloud bandwidth or budget alerts; abuse usually shows up there first.
+
+Admission only blocks devices outside your tailnets; abuse by an admitted device has to be handled with rate limits and monitoring.
+
 ## derper image
 
 [derper/Dockerfile](derper/Dockerfile) builds `tailscale.com/cmd/derper` for amd64 and arm64. The version is a required build arg:
